@@ -4,7 +4,8 @@ import 'dart:convert';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:untitled3/loginScreen.dart';
 
-const String registrationApiUrl = 'http://172.16.22.81:4220/api/Registration/UserRegistration';
+const String registrationApiUrl =
+    'http://172.16.22.81:4220/api/Registration/UserRegistration';
 // Registration API URL
 
 void main() {
@@ -23,6 +24,10 @@ class RegScreen extends StatefulWidget {
 }
 
 class _RegScreenState extends State<RegScreen> {
+  TextEditingController nameController = TextEditingController();
+  TextEditingController loginIdController = TextEditingController();
+  TextEditingController phoneOrGmailController = TextEditingController();
+
   String selectedGender = 'Male';
   // Default gender
 
@@ -71,15 +76,15 @@ class _RegScreenState extends State<RegScreen> {
   Future<void> registerUser(BuildContext context) async {
     try {
       final Map<String, dynamic> registrationData = {
-        "Name": "UserName",
+        "Name": nameController.text,
         // Replace with the user's name
         "GenderId": selectedGender,
         "Dob": selectedDate != null
             ? "${selectedDate!.day}-${selectedDate!.month}-${selectedDate!.year}"
             : "",
-        "MobileNo": "01789001135",
+        "MobileNo": phoneOrGmailController.text,
         // Replace with the user's mobile number
-        "LoginId": "user123",
+        "LoginId": loginIdController.text,
         // Replace with the user's login ID
         "Password": _passwordController.text,
         "ConfirmPassword": confirmPassword,
@@ -95,16 +100,15 @@ class _RegScreenState extends State<RegScreen> {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        print('Registration Successful: $responseData');
+        print('Registration Response: $responseData');
 
-        if (responseData['errCode'] == 'OK') {
+        if (responseData['respCode'] == '100') {
           Fluttertoast.showToast(
             msg: "Registration Successful!, ${responseData['errMessage']}",
             toastLength: Toast.LENGTH_SHORT,
             gravity: ToastGravity.BOTTOM,
             timeInSecForIosWeb: 1,
             backgroundColor: Colors.white,
-            // Change to your preferred color
             textColor: Colors.black,
             fontSize: 16.0,
           );
@@ -116,8 +120,10 @@ class _RegScreenState extends State<RegScreen> {
               builder: (context) => LoginScreen(),
             ),
           );
-        } else {
-          print('Registration Failed: ${response.body}');
+        }
+        else {
+          // Handle other possible error cases if needed
+          print('Registration Failed: ${responseData['errMessage']}');
           Fluttertoast.showToast(
             msg: "Registration Failed. ${responseData['errMessage']}",
             toastLength: Toast.LENGTH_SHORT,
@@ -129,7 +135,8 @@ class _RegScreenState extends State<RegScreen> {
           );
         }
       } else {
-        print('Registration Failed: ${response.body}');
+        // Handle HTTP error (e.g., server error) here
+        print('Registration Failed with HTTP Status Code ${response.statusCode}');
         Fluttertoast.showToast(
           msg: "Registration Failed. Please try again.",
           toastLength: Toast.LENGTH_SHORT,
@@ -200,7 +207,8 @@ class _RegScreenState extends State<RegScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const TextField(
+                       TextField(
+                        controller: nameController,
                         decoration: InputDecoration(
                           label: Text(
                             'Full Name',
@@ -255,7 +263,8 @@ class _RegScreenState extends State<RegScreen> {
                               : "",
                         ),
                       ),
-                      const TextField(
+                       TextField(
+                        controller: phoneOrGmailController,
                         decoration: InputDecoration(
                           labelText: 'Phone or Gmail',
                           labelStyle: TextStyle(
@@ -264,7 +273,8 @@ class _RegScreenState extends State<RegScreen> {
                           ),
                         ),
                       ),
-                      const TextField(
+                       TextField(
+                        controller: loginIdController,
                         decoration: InputDecoration(
                           label: Text(
                             'Login ID',

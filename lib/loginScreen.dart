@@ -16,16 +16,42 @@ void main() {
   );
 }
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
+
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  TextEditingController loginIdController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+
   // Function to perform the login API request
-  Future<void> loginUser(BuildContext context, String loginId, String password) async {
+  Future<void> loginUser(BuildContext context) async {
+    final loginId = loginIdController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (loginId.isEmpty || password.isEmpty) {
+      // Check if login ID or password is empty
+      Fluttertoast.showToast(
+        msg: "Please enter both login ID and password.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.white,
+        textColor: Colors.black,
+        fontSize: 16.0,
+      );
+      return;
+    }
+
     try {
       final Map<String, dynamic> loginData = {
         "LoginId": loginId,
         "Password": password,
       };
-      print(loginData);
+
       final response = await http.post(
         Uri.parse('http://172.16.22.81:4220/api/Registration/UserLogin'),
         headers: {
@@ -37,16 +63,18 @@ class LoginScreen extends StatelessWidget {
       if (response.statusCode == 200) {
         // Successful login, handle the response data here
         final responseData = jsonDecode(response.body);
-        print('Login Successful: $responseData');
-        // Check if the login response indicates success
-        if (responseData['respCode'] == '100') {
-          // Display a toast message for successful login
+        print('Login Response: $responseData');
+        final respCode = responseData['respCode'];
+        final errMessage = responseData['errMessage'];
+
+        if (respCode == '100') {
+          // Login is successful
           Fluttertoast.showToast(
-            msg: "Login Successful!, $responseData ",
+            msg: "Login Successful!",
             toastLength: Toast.LENGTH_SHORT,
             gravity: ToastGravity.BOTTOM,
             timeInSecForIosWeb: 1,
-            backgroundColor: Colors.white, // Change to your preferred color
+            backgroundColor: Colors.white,
             textColor: Colors.black,
             fontSize: 16.0,
           );
@@ -54,15 +82,14 @@ class LoginScreen extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const DashboardScreen()),
-            );
-          }
-          else {
-          // Handle unsuccessful login here
-          print('Login Failed: ${responseData['errMessage']}');
+          );
+        } else {
+          // Handle other possible error cases if needed
+          print('Login Failed: $errMessage');
 
           // Display a toast message for failed login
           Fluttertoast.showToast(
-            msg: "Login Failed. ${responseData['errMessage']}",
+            msg: "Login Failed. $errMessage",
             toastLength: Toast.LENGTH_SHORT,
             gravity: ToastGravity.BOTTOM,
             timeInSecForIosWeb: 1,
@@ -71,13 +98,12 @@ class LoginScreen extends StatelessWidget {
             fontSize: 16.0,
           );
         }
-      }
-         else {
-         // Handle unsuccessful login here
-         print('Login Failed: ${response.body}');
+      } else {
+        // Handle unsuccessful login here
+        print('Login Failed: ${response.body}');
 
         // Display a toast message for failed login
-         Fluttertoast.showToast(
+        Fluttertoast.showToast(
           msg: "Login Failed. Please try again.",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
@@ -85,24 +111,23 @@ class LoginScreen extends StatelessWidget {
           backgroundColor: Colors.white, // Change to your preferred color
           textColor: Colors.black,
           fontSize: 16.0,
-         );
-       }
-     }
-       catch (e) {
-        // Handle any errors that occurred during the API request
-        print('Error: $e');
-        // Display an error toast message if there's an issue with the request
-       Fluttertoast.showToast(
-         msg: "An error occurred. Please try again later.",
-         toastLength: Toast.LENGTH_SHORT,
-         gravity: ToastGravity.BOTTOM,
-         timeInSecForIosWeb: 1,
-         backgroundColor: Colors.white, // Change to your preferred color
-         textColor: Colors.black,
-         fontSize: 16.0,
-       );
-     }
-   }
+        );
+      }
+    } catch (e) {
+      // Handle any errors that occurred during the API request
+      print('Error: $e');
+      // Display an error toast message if there's an issue with the request
+      Fluttertoast.showToast(
+        msg: "An error occurred. Please try again later.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.white, // Change to your preferred color
+        textColor: Colors.black,
+        fontSize: 16.0,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -149,8 +174,9 @@ class LoginScreen extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const TextField(
-                        decoration: InputDecoration(
+                      TextField(
+                        controller: loginIdController,
+                        decoration: const InputDecoration(
                           label: Text(
                             'Login ID',
                             style: TextStyle(
@@ -161,8 +187,9 @@ class LoginScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const ObscureText(
-                        decoration: InputDecoration(
+                      ObscureText(
+                        controller: passwordController,
+                        decoration: const InputDecoration(
                           suffixIcon: Icon(
                             Icons.visibility_off_outlined,
                             color: Colors.grey,
@@ -181,7 +208,7 @@ class LoginScreen extends StatelessWidget {
                       GestureDetector(
                         onTap: () {
                           // Call the loginUser function with the username and password
-                          loginUser(context, 'user123', 'Test@1234');
+                          loginUser(context);
                         },
                         child: Container(
                           height: 50,
@@ -252,11 +279,22 @@ class LoginScreen extends StatelessWidget {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    // Dispose of the controllers when the widget is disposed
+    loginIdController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 }
 
 class ObscureText extends StatefulWidget {
+  final TextEditingController controller;
   final InputDecoration decoration;
-  const ObscureText({Key? key, required this.decoration}) : super(key: key);
+
+  const ObscureText({Key? key, required this.controller, required this.decoration})
+      : super(key: key);
 
   @override
   _ObscureTextState createState() => _ObscureTextState();
@@ -268,6 +306,7 @@ class _ObscureTextState extends State<ObscureText> {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      controller: widget.controller,
       obscureText: obscure,
       decoration: widget.decoration.copyWith(
         suffixIcon: GestureDetector(
